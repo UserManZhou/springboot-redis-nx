@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import sun.awt.windows.ThemeReader;
 
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+
 @RestController
 @RequestMapping("/redis")
 public class RedisController {
@@ -19,7 +22,8 @@ public class RedisController {
 
     @GetMapping("freemarker")
     public String freemarker() throws InterruptedException {
-        Boolean aBoolean = redisTemplate.opsForValue().setIfAbsent("lock", "111");
+        String uuid = UUID.randomUUID().toString();
+        Boolean aBoolean = redisTemplate.opsForValue().setIfAbsent("lock", uuid, 3,TimeUnit.SECONDS);
         System.out.println(aBoolean.toString());
         // 如果获取锁成功
         if (aBoolean){
@@ -33,7 +37,9 @@ public class RedisController {
 
             int i = Integer.parseInt(num+"");
             redisTemplate.opsForValue().set("num", ++i);
-            redisTemplate.delete("lock");
+            if (uuid.equals(redisTemplate.opsForValue().get("lock").toString())){
+                redisTemplate.delete("lock");
+            }
 
         }else{
             Thread.sleep(1000);
